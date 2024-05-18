@@ -1,0 +1,186 @@
+
+-- Import the dataset into MySQL using the Import Wizard. Ensure you use the command USE (schema_name) to select the appropriate schema before starting the data cleaning process.
+
+-- Perma CASE for table to convert 0 and 1 to assingable names
+ALTER TABLE uci ADD COLUMN Sex VARCHAR(255);
+
+UPDATE uci SET Sex =
+ CASE WHEN Sex = 1 THEN "male"
+ELSE "female" END;
+
+ALTER TABLE uci ADD COLUMN ChestPainType VARCHAR(50);
+
+UPDATE uci 
+SET ChestPainType = CASE 
+    WHEN ChestPainType = 1 THEN "Typical angina"
+    WHEN ChestPainType = 2 THEN "Atypical angina"
+    WHEN ChestPainType = 3 THEN "Non-anginal pain"
+    WHEN ChestPainType = 4 THEN "Asymptomatic"
+    ELSE "Unknown"
+END;
+ALTER TABLE uci drop COLUMN ChestPainType;
+ALTER TABLE uci drop COLUMN Sex;
+
+ALTER TABLE uci CHANGE Sex  Sex VARCHAR(50);
+ALTER TABLE uci CHANGE ChestPainType  ChestPainType VARCHAR(50);
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ALTER TABLE uci MODIFY Sex VARCHAR(50) AFTER Age;
+ALTER TABLE uci MODIFY ChestPainType VARCHAR(50) AFTER Sex;
+ALTER TABLE uci
+ADD COLUMN id int;
+ALTER TABLE uci
+MODIFY COLUMN id INT AUTO_INCREMENT PRIMARY KEY;
+ALTER TABLE uci MODIFY Age int AFTER id;
+
+-- Check table
+SELECT * FROM uci;
+
+-- --------------------------------------------------------------------------ANALYSIS STARTING BELOW--------------------------------------------------------------------------
+-- Create scatterplots to explore relationships between pairs of variables, such as Cholesterol vs. Resting blood pressure, Cholesterol vs. Max Heart rate
+-- ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ 
+ -- Avg Cholesterol levels against Chestpaintype
+SELECT   CASE 
+    WHEN Age BETWEEN 20 AND 30 THEN '20-30'
+    WHEN Age BETWEEN 30 AND 40 THEN '30-40'
+    WHEN Age BETWEEN 40 AND 50 THEN '40-50'
+    WHEN Age BETWEEN 50 AND 60 THEN '50-60'
+    WHEN Age BETWEEN 60 AND 70 THEN '60-70'
+    WHEN Age BETWEEN 70 AND 80 THEN '70-80'
+ELSE 0
+  END AS Age_Group, sex, ChestPainType, ROUND(AVG(Cholesterol),0) AS Avg_Cholesterol FROM uci
+WHERE ChestPainType <> "Unknown"
+GROUP BY Age_Group, sex, ChestPainType
+ORDER BY 1 ASC;
+
+-- ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-- Percentage of Blood Sugar levels over 120dl by Age group
+SELECT   
+  CASE 
+    WHEN Age BETWEEN 20 AND 30 THEN '20-30'
+    WHEN Age BETWEEN 30 AND 40 THEN '30-40'
+    WHEN Age BETWEEN 40 AND 50 THEN '40-50'
+    WHEN Age BETWEEN 50 AND 60 THEN '50-60'
+    WHEN Age BETWEEN 60 AND 70 THEN '60-70'
+    WHEN Age BETWEEN 70 AND 80 THEN '70-80'
+    ELSE 'Unknown'
+  END AS Age_Group,
+  sex,
+  COUNT(*) as Total_FastingBS,
+  SUM(COUNT(*)) OVER (PARTITION BY sex) AS Total_Count_By_Sex,
+  COUNT(*) / SUM(COUNT(*)) OVER (PARTITION BY sex) * 100 as Percentage 
+FROM uci
+WHERE FastingBS = 1
+GROUP BY age_group, sex
+ORDER BY sex, age_group;
+
+-- ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+-- Frequency of Typical Angina Induced by Exercise (Yes) and Non-Exercise (No) with Percentage Breakdown by Age Group
+-- An analysis to determine the correlation between the occurrences of Typical Angina and Exercise-Induced Angina.
+
+
+SELECT   
+  Age_Group,
+  ChestPainType,
+  CASE WHEN ExerciseAngina = 1 THEN 'Yes' ELSE 'No' END AS ExerciseAngina,
+  COUNT(ExerciseAngina) AS Total_ExerciseAngina, 
+  Age_Groups.sex,
+  ROUND(COUNT(ExerciseAngina) / age_group_total * 100, 2) AS Percentage
+FROM (
+  SELECT   
+    CASE 
+      WHEN Age BETWEEN 20 AND 30 THEN '20-30'
+      WHEN Age BETWEEN 30 AND 40 THEN '30-40'
+      WHEN Age BETWEEN 40 AND 50 THEN '40-50'
+      WHEN Age BETWEEN 50 AND 60 THEN '50-60'
+      WHEN Age BETWEEN 60 AND 70 THEN '60-70'
+      WHEN Age BETWEEN 70 AND 80 THEN '70-80'
+    ELSE 'Unknown'
+    END AS Age_Group, 
+    ChestPainType, 
+    sex,
+    ExerciseAngina
+  FROM uci
+  WHERE ChestPainType = 'Typical angina'
+) AS Age_Groups
+JOIN (
+  SELECT   
+    CASE 
+      WHEN Age BETWEEN 20 AND 30 THEN '20-30'
+      WHEN Age BETWEEN 30 AND 40 THEN '30-40'
+      WHEN Age BETWEEN 40 AND 50 THEN '40-50'
+      WHEN Age BETWEEN 50 AND 60 THEN '50-60'
+      WHEN Age BETWEEN 60 AND 70 THEN '60-70'
+      WHEN Age BETWEEN 70 AND 80 THEN '70-80'
+    ELSE 'Unknown'
+    END AS Age_Group_Alias, 
+    sex AS sex_total,
+    COUNT(ExerciseAngina) AS age_group_total
+  FROM uci
+  WHERE ChestPainType = 'Typical angina'
+  GROUP BY Age_Group_Alias, sex_total
+) AS Age_Group_Total 
+ON Age_Groups.Age_Group = Age_Group_Total.Age_Group_Alias 
+AND Age_Groups.sex = Age_Group_Total.sex_total
+GROUP BY Age_Group, ChestPainType, Age_Groups.sex, ExerciseAngina
+ORDER BY Age_Group ASC, Total_ExerciseAngina DESC;
+
+-- --------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-- Comparison of Cardiovascular Risk Levels between Males and Females by Age Groups
+SELECT 
+  CASE 
+    WHEN Age BETWEEN 20 AND 30 THEN '20-30'
+    WHEN Age BETWEEN 30 AND 40 THEN '30-40'
+    WHEN Age BETWEEN 40 AND 50 THEN '40-50'
+    WHEN Age BETWEEN 50 AND 60 THEN '50-60'
+    WHEN Age BETWEEN 60 AND 70 THEN '60-70'
+    WHEN Age BETWEEN 70 AND 80 THEN '70-80'
+  
+ELSE 0
+  END AS Age_Group, Sex, ROUND(AVG(Cholesterol),0) AS Cholesterol,
+ROUND(AVG(RestingBP),0) AS RestingBP,
+ROUND(AVG(MAXHR),0) AS "Max HR"
+FROM uci
+GROUP BY Age_Group, Sex
+ORDER BY 1; 
+
+-- ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+SELECT 
+  CASE 
+    WHEN Age BETWEEN 20 AND 30 THEN '20-30'
+    WHEN Age BETWEEN 30 AND 40 THEN '30-40'
+    WHEN Age BETWEEN 40 AND 50 THEN '40-50'
+    WHEN Age BETWEEN 50 AND 60 THEN '50-60'
+    WHEN Age BETWEEN 60 AND 70 THEN '60-70'
+    WHEN Age BETWEEN 70 AND 80 THEN '70-80'
+  
+ELSE 0
+  END AS Age_Group, Cholesterol, ROUND(AVG(RestingBP),0) AS RestingBP FROM uci
+  WHERE Age_Group = "70-80"
+GROUP BY Age_Group, Cholesterol
+ORDER BY 1; 
+
+-- ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+-- Scorecards Average Cholesterol, ResitngBP and MAXHR
+
+SELECT Sex, ROUND(AVG(Cholesterol),0) as "Average Cholesterol",
+ ROUND(AVG(RestingBP),0) "Average Blood Pressure",
+ ROUND(AVG(MAXHR),0) "Average Maximum Heart Rate"FROM uci
+ GROUP BY sex;
+ 
+ SELECT age, ChestPainType, COUNT(ExerciseAngina) AS Total_ExerciseAngina,
+       CASE WHEN ExerciseAngina = 1 THEN 'Yes' ELSE 'No' END AS ExerciseAngina
+FROM uci
+WHERE ChestPainType = 'Typical angina'
+GROUP BY Age, ChestPainType, ExerciseAngina
+ORDER BY 1 ASC, 3 DESC;
+
+
+-- --------------------------------------------------------------------------STATISTICAL ANALYSIS-------------------------------------------------------------------------------
+-- Note: For linear and clustering analysis, fields were filtered in MySQL then in Rstudio
+-- -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
