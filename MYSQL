@@ -1,4 +1,3 @@
-
 -- Import the dataset into MySQL using the Import Wizard. Ensure you use the command USE (schema_name) to select the appropriate schema before starting the data cleaning process.
 
 -- Perma CASE for table to convert 0 and 1 to assingable names
@@ -25,6 +24,7 @@ ALTER TABLE uci CHANGE Sex  Sex VARCHAR(50);
 ALTER TABLE uci CHANGE ChestPainType  ChestPainType VARCHAR(50);
 
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-- Add id column and shift it to the front identifying the person AND make ID PRIMARY KEY and AUTO INCREMENTS
 ALTER TABLE uci MODIFY Sex VARCHAR(50) AFTER Age;
 ALTER TABLE uci MODIFY ChestPainType VARCHAR(50) AFTER Sex;
 ALTER TABLE uci
@@ -54,7 +54,7 @@ WHERE ChestPainType <> "Unknown"
 GROUP BY Age_Group, sex, ChestPainType
 ORDER BY 1 ASC;
 
--- ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-- ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 -- Percentage of Blood Sugar levels over 120dl by Age group
 SELECT   
   CASE 
@@ -75,7 +75,7 @@ WHERE FastingBS = 1
 GROUP BY age_group, sex
 ORDER BY sex, age_group;
 
--- ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-- ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 -- Frequency of Typical Angina Induced by Exercise (Yes) and Non-Exercise (No) with Percentage Breakdown by Age Group
 -- An analysis to determine the correlation between the occurrences of Typical Angina and Exercise-Induced Angina.
@@ -127,7 +127,7 @@ AND Age_Groups.sex = Age_Group_Total.sex_total
 GROUP BY Age_Group, ChestPainType, Age_Groups.sex, ExerciseAngina
 ORDER BY Age_Group ASC, Total_ExerciseAngina DESC;
 
--- --------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-- -------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 -- Comparison of Cardiovascular Risk Levels between Males and Females by Age Groups
 SELECT 
   CASE 
@@ -146,7 +146,7 @@ FROM uci
 GROUP BY Age_Group, Sex
 ORDER BY 1; 
 
--- ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
 SELECT 
@@ -164,7 +164,7 @@ ELSE 0
 GROUP BY Age_Group, Cholesterol
 ORDER BY 1; 
 
--- ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 -- Scorecards Average Cholesterol, ResitngBP and MAXHR
 
@@ -181,6 +181,139 @@ GROUP BY Age, ChestPainType, ExerciseAngina
 ORDER BY 1 ASC, 3 DESC;
 
 
--- --------------------------------------------------------------------------STATISTICAL ANALYSIS-------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------STATISTICAL ANALYSIS--------------------------------------------------------------------------
 -- Note: For linear and clustering analysis, fields were filtered in MySQL then in Rstudio
--- -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-- ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+-- ----------------------------------Clustering Analysis (export to CSV called: UCI_Heat_Disease_Data_Clust_Cholesterol_ to use in RStudio)--------------------------------
+SELECT Age, ROUND(AVG(MAXHR),0) AS MAXHR, 
+ROUND(AVG(RestingBP),0) AS Resting_blood_pressure,
+ROUND(AVG(Cholesterol),0) AS Cholesterol
+ from uci 
+GROUP BY age
+ORDER BY 2 DESC;
+
+SELECT Age, ROUND(AVG(RestingBP),0) AS Resting_blood_pressure from uci 
+GROUP BY age
+ORDER BY 2 DESC;
+
+SELECT Age, ROUND(AVG(Cholesterol),0) AS Cholesterol from uci 
+GROUP BY age
+ORDER BY 2 DESC;
+
+
+-- ----------------------------------Linear Regression (export to CSV called: plot to use in RStudio)----------------------------------------------------------------------
+SELECT  
+  CASE 
+    WHEN Age BETWEEN 20 AND 30 THEN '20-30'
+    WHEN Age BETWEEN 30 AND 40 THEN '30-40'
+    WHEN Age BETWEEN 40 AND 50 THEN '40-50'
+    WHEN Age BETWEEN 50 AND 60 THEN '50-60'
+    WHEN Age BETWEEN 60 AND 70 THEN '60-70'
+    WHEN Age BETWEEN 70 AND 80 THEN '70-80'
+  
+ELSE 0
+  END AS Age_Group, Cholesterol, RestingBP FROM uci;
+
+-- ----------------------------------------------------START OF RStudio CODE-------------------------------------------------------------------------------------------------
+
+
+
+
+# Libraries Needed for Statistical Analysis
+# if Library is unable to run input install.packages("Package_name")
+
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(stats)
+library(readr)
+library(cluster)
+library(plotly)
+library(tidymodels)
+
+# Clustering Analysis
+
+UCI_Heat_Disease_Data_Clust_Cholesterol_ <- read_csv("UCI Heat Disease Data - Clust(Cholesterol).csv")
+
+employment_clust <- kmeans(select(UCI_Heat_Disease_Data_Clust_Cholesterol_, -Cholesterol), centers = 3)
+summary(employment_clust)
+
+
+tidy(employment_clust)
+#Plot dimension Age crime vs Population density
+augment(employment_clust, UCI_Heat_Disease_Data_Clust_Cholesterol_) %>%
+  ggplot(aes(Age, Cholesterol, color = .cluster)) +
+  geom_point()
+
+#Chose number of K(clusters) we want.
+kclusts <-
+  tibble(k = 1:9) %>%
+  mutate(
+    kclust = map(k, ~ kmeans(select(UCI_Heat_Disease_Data_Clust_Cholesterol_, -Cholesterol), .x)),
+    glanced = map(kclust, glance),
+  )
+#Look at the Age winith0cluster sum of suares and check for dropoff
+kclusts %>%
+  unnest(cols = c(glanced)) %>%
+  ggplot(aes(k, tot.withinss)) +
+  geom_line(alpha = 0.5, size = 1.2, color = "midnightblue") +
+  geom_point(size = 2, color = "midnightblue")
+#Plot amount of clusters indicated from the line graph
+final_clust <- kmeans(select(UCI_Heat_Disease_Data_Clust_Cholesterol_, -Cholesterol), centers = 5)
+summary(final_clust)
+tidy(final_clust)
+#use plotly to present interactive graph 
+p <- augment(final_clust, UCI_Heat_Disease_Data_Clust_Cholesterol_) %>%
+  ggplot(aes(Age,Cholesterol, color = .cluster)) +
+  geom_point()
+
+ggplotly(p, height = 500)
+
+# Statistical Results
+
+# Compute silhouette width
+sil_width <- silhouette(final_clust$cluster, dist(select(UCI_Heat_Disease_Data_Clust_Cholesterol_, -Cholesterol)))
+
+# Print silhouette width
+summary(sil_width)
+
+# Compute gap statistic
+gap_stat <- clusGap(select(UCI_Heat_Disease_Data_Clust_Cholesterol_, -Cholesterol), FUN = kmeans, nstart = 25, K.max = 5, B = 50)
+
+
+# Print gap statistic
+print(gap_stat, method = "firstmax")
+
+
+
+
+
+
+# Linear Regression Analysis
+
+plot <- read_csv("plot.csv")
+
+filtered_table_40_50 <- filter(plot, Age_Group == "40-50")
+
+data("filtered_table_40_50")
+fv <- filtered_table_40_50 %>% filter(!is.na(Cholesterol)) %>% lm(Cholesterol ~ RestingBP,.) %>% fitted.values()
+
+filtered_table_40_50 %>% filter(!is.na(Cholesterol)) %>%
+  plot_ly(x = ~RestingBP, y = ~Cholesterol, mode = "markers") %>% 
+  add_markers(y = ~Cholesterol,) %>% 
+  add_trace(x = ~RestingBP, y = fv, mode = "lines", name ="regression") %>%
+  layout(showlegend = F)   %>%
+  add_trace(x = filtered_table_40_50$RestingBP, 
+            y = filtered_table_40_50$Cholesterol,
+            text = filtered_table_40_50$Age_Group,
+            type = "scatter", 
+            mode = "markers",
+            name = "Borough Data",
+            hovertemplate = paste("<b>%{text}</b><br>",
+                                  "%{yaxis.title.text}: %{y}<br>",
+                                  "%{xaxis.title.text}: %{x}<br>"))
+
+#P-value <0.0001
+lmod6 <- lm(Cholesterol ~ RestingBP, data = filtered_table_40_50)
+summary(lmod6)
