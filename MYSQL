@@ -1,8 +1,3 @@
-### Introduction to MySQL and Rstudio Code
-
-
-
-
 
 -- Import the dataset into MySQL using the Import Wizard. Ensure you use the command USE (schema_name) to select the appropriate schema before starting the data cleaning process.
 
