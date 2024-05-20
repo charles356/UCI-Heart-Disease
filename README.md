@@ -8,13 +8,13 @@ The link to my dashboard visulisation can be found [here.](https://public.tablea
 
 In this project, I utilized a combination of powerful tools to prepare, analyze, and visualize the UCI Heart Disease dataset. Below are the details of each program used:
 
-### [MYSQL](#MYSQL)
+### MYSQL
    
 **Purpose: Data Preparation**
 
 Description: MySQL is a robust, open-source relational database management system (RDBMS). For this project, I used MySQL to store the raw data, clean it, and perform preliminary transformations. SQL queries were employed to filter, aggregate, and join various tables, ensuring that the data was in the best shape for subsequent analysis.
 
-### [RStudio](#RStudio)
+### RStudio
 
 
 **Purpose: Statistical Analysis**
@@ -22,7 +22,7 @@ Description: MySQL is a robust, open-source relational database management syste
 
 Description: RStudio is an integrated development environment (IDE) for R, a programming language focused on statistical computing and graphics. In this project, RStudio was used for Linear Regression and Clustering Analysis exploring patterns, trends and overall key findings from the data. Detailed statistical results and interpretations are presented in Page 2 of my dashboard.
 
-### [Tableau](#Tableau)
+### Tableau
 
 
 **Purpose: Data Visualization**
