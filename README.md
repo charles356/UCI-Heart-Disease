@@ -12,7 +12,7 @@ In this project, I utilised programming languages to analyse and visualise the U
    
 **Purpose: Data Preparation**
 
-Description: MySQL is a robust, open-source relational database management system (RDBMS). For this project, I used MySQL to store the raw data, clean it, and perform preliminary transformations. SQL queries were employed to filter, aggregate, and join various tables, ensuring that the data was in the best shape for subsequent analysis.
+Description: MySQL is a relational database management system (RDBMS). I used MySQL to store the raw data, clean it, and perform preliminary transformations. Functions like filters, aggregations, and joins were used ensuring that the data was in the best shape to use.
 
 ### RStudio
 
