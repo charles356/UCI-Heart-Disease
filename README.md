@@ -6,7 +6,7 @@ The link to my dashboard visulisation can be found [here.](https://public.tablea
 
 ## Table of Contents
 
-In this project, I utilised a combination of powerful tools to prepare, analyze, and visualize the UCI Heart Disease dataset. Below are the details of each program used:
+In this project, I utilised programming languages to analyse, and visualise the UCI Heart Disease dataset. Below are the details of each program used:
 
 ### MYSQL
    
