@@ -1,6 +1,6 @@
 # UCI-Heart-Disease
 
-This is my Analysis From the UCI Heart Disease Compiled Data in UCI From Kaggle.
+This is my Analysis From the UCI Heart Disease Compiled Data From Kaggle.
 
 The link to my dashboard visulisation can be found [here.](https://public.tableau.com/app/profile/charles.muiruri/viz/UCIHeartDiseaseDataDashboard/UCI-HeartDiseaseDataDashboardPage1)
 
