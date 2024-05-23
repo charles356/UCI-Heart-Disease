@@ -1,4 +1,4 @@
--- Import the dataset into MySQL using the Import Wizard. Ensure you use the command USE (schema_name) to select the appropriate schema before starting the data cleaning process.
+--- Import the dataset into MySQL using the Import Wizard. Ensure you use the command USE (schema_name) to select the appropriate schema before starting the data cleaning process.
 
 -- Perma CASE for table to convert 0 and 1 to assingable names
 ALTER TABLE uci ADD COLUMN Sex VARCHAR(255);
